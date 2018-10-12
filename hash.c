@@ -89,45 +89,30 @@ uint32_t hashing(const char *key) {
 }
 
 bool redimensionar_hash(hash_t *hash){
-    //Otra opcion es crear una nueva tabla en lugar de un nuevo hash.
 
     size_t tam_nuevo = hash->largo*3; //Acá podemos llamar a una funcion que devuelva un numero primo como tam_nuevo
     hash_campo_t* tabla_nueva = malloc(sizeof(hash_campo_t)*tam_nuevo);
-    if(!tabla_nueva) return false;
-    bool ok = true;
-    for(int i=0; i<hash->largo; i++){
-        ok &= hash_guardar(hash_nuevo, hash->tabla[i]->clave, hash->tabla[i]->dato);
-    }
-    if(!ok){
-        free(hash_nuevo);
-        return false;
-    }
-    return true;
-}
-bool redimensionar_hash(hash_t *hash){
-
-    size_t tam_nuevo = hash->largo*3; //Acá podemos llamar a una funcion que devuelva un numero primo como tam_nuevo
-    hash_campo_t* tabla_nueva = malloc(sizeof(hash_campo_t)*tam_nuevo);
+    size_t tope = hash->largo;
     if(!tabla_nueva) return false;
 
     hash_campo_t* tabla_vieja = hash->tabla;
     hash->tabla = tabla_nueva;
-    hash->carga = 0.1; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
+    hash->largo = tam_nuevo; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
     bool ok = true;
-    for(int i=0; i<hash->largo; i++){
+    for(int i=0; i<tope; i++){
         //Cuidado. Hay que ver como se inicializa cada campo de la tabla
         ok &= hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato);
     }
     if(!ok){
         free(tabla_nueva);
         hash->tabla = tabla_vieja;
+        hash->largo = tope;
         modificar_carga(hash);
         return false;
     }
-    hash->largo = tam_nuevo;
     modificar_carga(hash);
     free(tabla_vieja);
-    
+
     return true;
 }
 
@@ -172,8 +157,9 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 
     int indice = hashing(clave);
     int i = 1;
+    int indice_original = indice;
     while((hash->tabla[indice]->estado == OCUPADO)||(hash->tabla[indice]->estado == BORRADO)){ //Si encuentra un indice donde este vacio introducirá
-        indice = calcular_posicion(hash, indice, i); //Mas adelante podemos cambiar esta funcion
+        indice = calcular_posicion(hash, indice_original, i); //Mas adelante podemos cambiar esta funcion
         i++;
     }
     hash->tabla[indice]->estado = OCUPADO;

@@ -9,8 +9,6 @@
  * *****************************************************************/
 
 // Los structs deben llamarse "hash" y "hash_iter".
-struct hash;
-struct hash_iter;
 
 typedef struct hash hash_t;
 typedef struct hash_iter hash_iter_t;
@@ -58,13 +56,11 @@ bool hash_pertenece(const hash_t *hash, const char *clave);
 size_t hash_cantidad(const hash_t *hash);
 
 /* Destruye la estructura liberando la memoria pedida y llamando a la función
- * destruir para cada par (clave, dato).
+ * destruir para cada para (clave, dato).
  * Pre: La estructura hash fue inicializada
  * Post: La estructura hash fue destruida
  */
 void hash_destruir(hash_t *hash);
-
-/* Iterador del hash */
 
 /* ******************************************************************
  *                PRIMITIVAS DEL ITERADOR HASH

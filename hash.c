@@ -18,7 +18,27 @@ typedef void (*hash_destruir_dato_t)(void *);
  *                      PRIMITIVAS DEL HASH
  * *****************************************************************/
 
-hash_t *hash_crear(hash_destruir_dato_t destruir_dato);
+hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
+    hast_t* hash = malloc(sizeof(hash_t)*TAM); //#define TAM 33
+    if (!hash) return NULL;
+
+    hash_campo_t* tabla = malloc(sizeof(hash_campo_t));
+    if (!tabla){
+        free(hash);
+        return NULL;
+    }
+    tabla->clave = NULL;
+    tabla->valor = NULL;
+    tabla->estado = false;
+
+    hash->cantidad = 0; 
+    hash->largo = 0; //MODIFICAR
+    hash->carga = 0;
+    hash->tabla = tabla;
+    hash->destruir_dato = destruir_dato;
+
+    return hash;
+}
 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato);
 
@@ -31,8 +51,6 @@ bool hash_pertenece(const hash_t *hash, const char *clave);
 size_t hash_cantidad(const hash_t *hash);
 
 void hash_destruir(hash_t *hash);
-
-/* Iterador del hash */
 
 /* ******************************************************************
  *                PRIMITIVAS DEL ITERADOR HASH

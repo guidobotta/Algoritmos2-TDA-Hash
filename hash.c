@@ -1,5 +1,6 @@
 #include "hash.h"
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stddef.h>
 #define TAM 33
 
@@ -114,7 +115,11 @@ size_t hash_cantidad(const hash_t *hash){
     return hash->cantidad;
 }
 
-void hash_destruir(hash_t *hash);
+void hash_destruir(hash_t *hash){
+    //Liberar dato y clave de cada elemento con funcion destruir
+    free(hash->tabla);
+    free(hash);
+}
 
 /* ******************************************************************
  *                PRIMITIVAS DEL ITERADOR HASH

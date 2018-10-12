@@ -2,6 +2,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #define TAM 33
+#define FACTOR_LIMITE 0,7
+#define VACIO '0'
+#define OCUPADO '1'
+#define BORRADO '2'
 
 /* ******************************************************************
  *                DEFINICION DE LOS TIPOS DE DATOS
@@ -10,13 +14,13 @@
  typedef struct hash_campo{
     char *clave;
     void *valor;
-    estado_t estado;
+    char estado; //0 = vacio, 1 = ocupado, 2 = borrado;
  }hash_campo_t;
 
  struct hash {
     size_t cantidad;
     size_t largo;
-    size_t carga;
+    float carga;
     hash_campo_t *tabla;
     hash_destruir_dato_t destruir_dato;
  };
@@ -25,7 +29,7 @@
   *                      PRIMITIVAS PRIVADAS
   * *****************************************************************/
 //https://stackoverflow.com/questions/32795453/use-of-murmurhash-in-c
-uint32_t murmur3_32(const char *key) {
+uint32_t hashing(const char *key) {
 
     static const uint32_t c1 = 0xcc9e2d51;
     static const uint32_t c2 = 0x1b873593;
@@ -77,6 +81,57 @@ uint32_t murmur3_32(const char *key) {
    return hash;
 }
 
+bool redimensionar_hash(hash_t *hash){
+    //Otra opcion es crear una nueva tabla en lugar de un nuevo hash.
+
+    size_t tam_nuevo = hash->largo*3; //Acá podemos llamar a una funcion que devuelva un numero primo como tam_nuevo
+    hash_campo_t* tabla_nueva = malloc(sizeof(hash_campo_t)*tam_nuevo);
+    if(!tabla_nueva) return false;
+    bool ok = true;
+    for(int i=0; i<hash->largo; i++){
+        ok &= hash_guardar(hash_nuevo, hash->tabla[i]->clave, hash->tabla[i]->dato);
+    }
+    if(!ok){
+        free(hash_nuevo);
+        return false;
+    }
+    return true;
+}
+bool redimensionar_hash(hash_t *hash){
+
+    size_t tam_nuevo = hash->largo*3; //Acá podemos llamar a una funcion que devuelva un numero primo como tam_nuevo
+    hash_campo_t* tabla_nueva = malloc(sizeof(hash_campo_t)*tam_nuevo);
+    if(!tabla_nueva) return false;
+
+    hash_campo_t* tabla_vieja = hash->tabla;
+    hash->tabla = tabla_nueva;
+    hash->carga = 0.1; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
+    bool ok = true;
+    for(int i=0; i<hash->largo; i++){
+        //Cuidado. Hay que ver como se inicializa cada campo de la tabla
+        ok &= hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato);
+    }
+    if(!ok){
+        free(tabla_nueva);
+        hash->tabla = tabla_vieja;
+        modificar_carga(hash);
+        return false;
+    }
+    hash->largo = tam_nuevo;
+    modificar_carga(hash);
+    free(tabla_vieja);
+    
+    return true;
+}
+
+void modificar_carga(hash_t *hash){
+    hash->carga = hash->cantidad/hash->largo;
+}
+
+int calcular_posicion(hash_t* hash, int posicion){
+    return (posicion + i*i) % hash->largo;
+}
+
 /* ******************************************************************
  *                      PRIMITIVAS DEL HASH
  * *****************************************************************/
@@ -102,7 +157,27 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     return hash;
 }
 
-bool hash_guardar(hash_t *hash, const char *clave, void *dato);
+bool hash_guardar(hash_t *hash, const char *clave, void *dato){
+
+    if(hash->carga >= FACTOR_LIMITE){
+        if(redimensionar_hash(hash)) return false;
+    }
+
+    int indice = hashing(clave);
+    int i = 1;
+    while((hash->tabla[indice]->estado == OCUPADO)||(hash->tabla[indice]->estado == BORRADO)){ //Si encuentra un indice donde este vacio introducirá
+        indice = calcular_posicion(hash, indice, i); //Mas adelante podemos cambiar esta funcion
+        i++;
+    }
+    hash->tabla[indice]->estado = OCUPADO;
+    strcpy(hash->tabla[indice]->clave, clave);
+    hash->tabla[indice]->valor = dato;
+    hash->cantidad++;
+
+    modificar_carga(hash);
+
+    return true;
+}
 
 void *hash_borrar(hash_t *hash, const char *clave);
 

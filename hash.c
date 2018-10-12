@@ -1,5 +1,6 @@
 #include "hash.h"
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stddef.h>
 #define TAM 33
 #define FACTOR_LIMITE 0,7
@@ -17,7 +18,7 @@
     char estado; //0 = vacio, 1 = ocupado, 2 = borrado;
  }hash_campo_t;
 
- struct hash {
+ struct hash{
     size_t cantidad;
     size_t largo;
     float carga;
@@ -25,9 +26,15 @@
     hash_destruir_dato_t destruir_dato;
  };
 
+ struct hash_iter{
+    hash_t* hash;
+    size_t posicion;
+ };
+
  /* ******************************************************************
   *                      PRIMITIVAS PRIVADAS
   * *****************************************************************/
+
 //https://stackoverflow.com/questions/32795453/use-of-murmurhash-in-c
 uint32_t hashing(const char *key) {
 
@@ -189,13 +196,24 @@ size_t hash_cantidad(const hash_t *hash){
     return hash->cantidad;
 }
 
-void hash_destruir(hash_t *hash);
+void hash_destruir(hash_t *hash){
+    //Liberar dato y clave de cada elemento con funcion destruir
+    free(hash->tabla);
+    free(hash);
+}
 
 /* ******************************************************************
  *                PRIMITIVAS DEL ITERADOR HASH
  * *****************************************************************/
 
-hash_iter_t *hash_iter_crear(const hash_t *hash);
+hash_iter_t *hash_iter_crear(const hash_t *hash){
+    hash_iter_t* hash_iter = malloc(sizeof(hash_iter_t));
+    if (hash_iter) return NULL;
+
+    //COMPLETAR
+
+    return hash_iter;
+}
 
 bool hash_iter_avanzar(hash_iter_t *iter);
 

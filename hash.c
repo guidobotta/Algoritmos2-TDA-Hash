@@ -48,7 +48,9 @@ void *hash_obtener(const hash_t *hash, const char *clave);
 
 bool hash_pertenece(const hash_t *hash, const char *clave);
 
-size_t hash_cantidad(const hash_t *hash);
+size_t hash_cantidad(const hash_t *hash){
+    return hash->cantidad;
+}
 
 void hash_destruir(hash_t *hash);
 

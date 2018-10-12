@@ -14,7 +14,7 @@
     estado_t estado;
  }hash_campo_t;
 
- struct hash {
+ struct hash{
     size_t cantidad;
     size_t largo;
     size_t carga;
@@ -22,9 +22,15 @@
     hash_destruir_dato_t destruir_dato;
  };
 
+ struct hash_iter{
+    hash_t* hash;
+    size_t posicion;
+ };
+
  /* ******************************************************************
   *                      PRIMITIVAS PRIVADAS
   * *****************************************************************/
+
 //https://stackoverflow.com/questions/32795453/use-of-murmurhash-in-c
 uint32_t murmur3_32(const char *key) {
 
@@ -125,7 +131,14 @@ void hash_destruir(hash_t *hash){
  *                PRIMITIVAS DEL ITERADOR HASH
  * *****************************************************************/
 
-hash_iter_t *hash_iter_crear(const hash_t *hash);
+hash_iter_t *hash_iter_crear(const hash_t *hash){
+    hash_iter_t* hash_iter = malloc(sizeof(hash_iter_t));
+    if (hash_iter) return NULL;
+
+    //COMPLETAR
+
+    return hash_iter;
+}
 
 bool hash_iter_avanzar(hash_iter_t *iter);
 

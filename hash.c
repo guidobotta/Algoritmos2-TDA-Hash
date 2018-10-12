@@ -7,17 +7,17 @@
  * *****************************************************************/
 
  typedef struct hash_campo{
-     char *clave;
-     void *valor;
-     estado_t estado;
+    char *clave;
+    void *valor;
+    estado_t estado;
  }hash_campo_t;
 
  struct hash {
-     size_t cantidad;
-     size_t largo;
-     size_t carga;
-     hash_campo_t *tabla;
-     hash_destruir_dato_t destruir_dato;
+    size_t cantidad;
+    size_t largo;
+    size_t carga;
+    hash_campo_t *tabla;
+    hash_destruir_dato_t destruir_dato;
  };
 
  /* ******************************************************************
@@ -80,17 +80,14 @@ uint32_t murmur3_32(const char *key, uint32_t len, uint32_t seed) {
  * *****************************************************************/
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
-    hast_t* hash = malloc(sizeof(hash_t)*TAM); //#define TAM 33
+    hast_t* hash = malloc(sizeof(hash_t)); 
     if (!hash) return NULL;
 
-    hash_campo_t* tabla = malloc(sizeof(hash_campo_t));
+    hash_campo_t* tabla = malloc(sizeof(hash_campo_t)*TAM); //#define TAM 33
     if (!tabla){
         free(hash);
         return NULL;
     }
-    tabla->clave = NULL;
-    tabla->valor = NULL;
-    tabla->estado = false;
 
     hash->cantidad = 0;
     hash->largo = 0; //MODIFICAR

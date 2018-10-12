@@ -1,6 +1,7 @@
 #include "hash.h"
 #include <stdbool.h>
 #include <stddef.h>
+#define TAM 33
 
 /* ******************************************************************
  *                DEFINICION DE LOS TIPOS DE DATOS
@@ -24,51 +25,54 @@
   *                      PRIMITIVAS PRIVADAS
   * *****************************************************************/
 //https://stackoverflow.com/questions/32795453/use-of-murmurhash-in-c
-uint32_t murmur3_32(const char *key, uint32_t len, uint32_t seed) {
-      static const uint32_t c1 = 0xcc9e2d51;
-      static const uint32_t c2 = 0x1b873593;
-      static const uint32_t r1 = 15;
-      static const uint32_t r2 = 13;
-      static const uint32_t m = 5;
-      static const uint32_t n = 0xe6546b64;
+uint32_t murmur3_32(const char *key) {
 
-      uint32_t hash = seed;
+    static const uint32_t c1 = 0xcc9e2d51;
+    static const uint32_t c2 = 0x1b873593;
+    static const uint32_t r1 = 15;
+    static const uint32_t r2 = 13;
+    static const uint32_t m = 5;
+    static const uint32_t n = 0xe6546b64;
 
-      const int nblocks = len / 4;
-      const uint32_t *blocks = (const uint32_t *) key;
-      int i;
-      for (i = 0; i < nblocks; i++) {
-          uint32_t k = blocks[i];
-          k *= c1;
-          k = (k << r1) | (k >> (32 - r1));
-          k *= c2;
+    uint32_t len = strlen(key);
+    uint32_t seed = 42 //Un numero aleatorio, pero constante
+    uint32_t hash = seed;
 
-          hash ^= k;
-          hash = ((hash << r2) | (hash >> (32 - r2))) * m + n;
-      }
+    const int nblocks = len / 4;
+    const uint32_t *blocks = (const uint32_t *) key;
+    int i;
+    for (i = 0; i < nblocks; i++) {
+        uint32_t k = blocks[i];
+        k *= c1;
+        k = (k << r1) | (k >> (32 - r1));
+        k *= c2;
 
-      const uint8_t *tail = (const uint8_t *) (key + nblocks * 4);
-      uint32_t k1 = 0;
+        hash ^= k;
+        hash = ((hash << r2) | (hash >> (32 - r2))) * m + n;
+    }
 
-      switch (len & 3) {
-      case 3:
-          k1 ^= tail[2] << 16;
-      case 2:
-          k1 ^= tail[1] << 8;
-      case 1:
-          k1 ^= tail[0];
+    const uint8_t *tail = (const uint8_t *) (key + nblocks * 4);
+    uint32_t k1 = 0;
 
-          k1 *= c1;
-          k1 = (k1 << r1) | (k1 >> (32 - r1));
-          k1 *= c2;
-          hash ^= k1;
-      }
-   hash ^= len;
-   hash ^= (hash >> 16);
-   hash *= 0x85ebca6b;
-   hash ^= (hash >> 13);
-   hash *= 0xc2b2ae35;
-   hash ^= (hash >> 16);
+    switch (len & 3) {
+    case 3:
+        k1 ^= tail[2] << 16;
+    case 2:
+        k1 ^= tail[1] << 8;
+    case 1:
+        k1 ^= tail[0];
+
+        k1 *= c1;
+        k1 = (k1 << r1) | (k1 >> (32 - r1));
+        k1 *= c2;
+        hash ^= k1;
+    }
+    hash ^= len;
+    hash ^= (hash >> 16);
+    hash *= 0x85ebca6b;
+    hash ^= (hash >> 13);
+    hash *= 0xc2b2ae35;
+    hash ^= (hash >> 16);
 
    return hash;
 }
@@ -78,17 +82,19 @@ uint32_t murmur3_32(const char *key, uint32_t len, uint32_t seed) {
  * *****************************************************************/
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
-    hast_t* hash = malloc(sizeof(hash_t)); 
+
+    hash_t* hash = malloc(sizeof(hash_t));
     if (!hash) return NULL;
 
     hash_campo_t* tabla = malloc(sizeof(hash_campo_t)*TAM); //#define TAM 33
+
     if (!tabla){
         free(hash);
         return NULL;
     }
 
     hash->cantidad = 0;
-    hash->largo = 0; //MODIFICAR
+    hash->largo = TAM;
     hash->carga = 0;
     hash->tabla = tabla;
     hash->destruir_dato = destruir_dato;

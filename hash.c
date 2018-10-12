@@ -7,18 +7,18 @@
  *                DEFINICION DE LOS TIPOS DE DATOS
  * *****************************************************************/
 
-typedef struct hash_campo{
-     char *clave;
-     void *valor;
-     estado_t estado;
+ typedef struct hash_campo{
+    char *clave;
+    void *valor;
+    estado_t estado;
  }hash_campo_t;
 
-struct hash {
-     size_t cantidad;
-     size_t largo;
-     size_t carga;
-     hash_campo_t *tabla;
-     hash_destruir_dato_t destruir_dato;
+ struct hash {
+    size_t cantidad;
+    size_t largo;
+    size_t carga;
+    hash_campo_t *tabla;
+    hash_destruir_dato_t destruir_dato;
  };
 
  /* ******************************************************************
@@ -33,7 +33,7 @@ uint32_t murmur3_32(const char *key) {
     static const uint32_t r2 = 13;
     static const uint32_t m = 5;
     static const uint32_t n = 0xe6546b64;
-    
+
     uint32_t len = strlen(key);
     uint32_t seed = 42 //Un numero aleatorio, pero constante
     uint32_t hash = seed;
@@ -84,20 +84,19 @@ uint32_t murmur3_32(const char *key) {
  * *****************************************************************/
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
-    hast_t* hash = malloc(sizeof(hash_t));
+
+    hash_t* hash = malloc(sizeof(hash_t));
     if (!hash) return NULL;
 
-    hash_campo_t* tabla = malloc(sizeof(hash_campo_t)*TAM);  //#define TAM 33
+    hash_campo_t* tabla = malloc(sizeof(hash_campo_t)*TAM); //#define TAM 33
+
     if (!tabla){
         free(hash);
         return NULL;
     }
-    tabla->clave = NULL;
-    tabla->valor = NULL;
-    tabla->estado = false;
 
     hash->cantidad = 0;
-    hash->largo = 0; //MODIFICAR
+    hash->largo = TAM;
     hash->carga = 0;
     hash->tabla = tabla;
     hash->destruir_dato = destruir_dato;
@@ -113,7 +112,9 @@ void *hash_obtener(const hash_t *hash, const char *clave);
 
 bool hash_pertenece(const hash_t *hash, const char *clave);
 
-size_t hash_cantidad(const hash_t *hash);
+size_t hash_cantidad(const hash_t *hash){
+    return hash->cantidad;
+}
 
 void hash_destruir(hash_t *hash);
 

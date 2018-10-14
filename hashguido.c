@@ -127,18 +127,18 @@ bool redimensionar_hash(hash_t *hash){
     hash_campo_t* tabla_vieja = hash->tabla;
     hash->tabla = tabla_nueva;
     hash->largo = tam_nuevo; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
-    
+
     for(int i=0; i<tope; i++){
         //Cuidado. Hay que ver como se inicializa cada campo de la tabla
         if(hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato)){
             free(tabla_nueva);
             hash->tabla = tabla_vieja;
             hash->largo = tope;
-            hash->carga = hash->cantidad/hash->largo; 
+            hash->carga = hash->cantidad/hash->largo;
             return false;
         }
     }
-    
+
     hash->carga = hash->cantidad/hash->largo;
     free(tabla_vieja);
 
@@ -190,7 +190,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     int vacio = -1;
 
     int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
- 
+
     if(posicion == -1){
         if(borrado != -1){} //ASIGNAR CLAVE EN BORRADO
         else{} //ASIGNAR CLAVE EN VACIO
@@ -213,7 +213,7 @@ void *hash_obtener(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
-    int posicion = (calcular_posicion(hash->tabla, indice, clave, borrado, vacio);
+    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio);
 
     if (posicion == -1) return NULL;
     return hash->tabla[posicion]->valor;

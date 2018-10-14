@@ -183,6 +183,12 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     return hash;
 }
 
+void modificar_campo(hash_t* hash, hash_campo_t* tabla, int posicion){
+    hash->tabla[posicion]->clave = clave;
+    hash->tabla[posicion]->valor = dato;
+    hash->tabla[posicion]->estado = OCUPADO;
+}
+
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 
     if(hash->carga >= FACTOR_LIMITE){
@@ -196,18 +202,12 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
  
     if(posicion == -1){
-        hash_campo_t campo;
-        hash->clave = clave;
-        hash->valor = valor;
-        hash->estado = OCUPADO;
-        if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
-            hash->tabla[borrado] = campo;
-        } 
-        else{ //ASIGNAR CLAVE EN VACIO
-            hash->tabla[vacio] = campo;
-        }
-    }
-    else{} //PISAR CLAVE ANTERIOR
+        //ASIGNAR CLAVE EN BORRADO
+        if(borrado != -1) modificar_campo(hash, hash->tabla, borrado);
+        //ASIGNAR CLAVE EN VACIO
+        else modificar_campo(hash, hash->tabla, vacio); 
+               
+    }else hash->tabla[posicion]->valor = dato; //PISAR CLAVE ANTERIOR
 
     /*hash->tabla[indice]->estado = OCUPADO;
     strcpy(hash->tabla[indice]->clave, clave); //Es necesario?

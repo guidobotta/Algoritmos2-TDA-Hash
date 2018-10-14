@@ -27,11 +27,6 @@
     hash_destruir_dato_t destruir_dato;
  };
 
- struct hash_iter{
-    hash_t* hash;
-    size_t posicion;
- };
-
  /* ******************************************************************
   *                      PRIMITIVAS PRIVADAS
   * *****************************************************************/
@@ -130,7 +125,7 @@ bool redimensionar_hash(hash_t *hash){
 
     for(int i=0; i<tope; i++){
         //Cuidado. Hay que ver como se inicializa cada campo de la tabla
-        if(hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato)){
+        if(!hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato)){
             free(tabla_nueva);
             hash->tabla = tabla_vieja;
             hash->largo = tope;
@@ -144,6 +139,15 @@ bool redimensionar_hash(hash_t *hash){
 
     return true;
 }
+
+/* ******************************************************************
+ *                DEFINICION DEL STRUCT HASH
+ * *****************************************************************/
+
+ struct hash_iter{
+    hash_t* hash;
+    size_t posicion;
+ };
 
 /* ******************************************************************
  *                      PRIMITIVAS DEL HASH
@@ -192,8 +196,16 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
 
     if(posicion == -1){
-        if(borrado != -1){} //ASIGNAR CLAVE EN BORRADO
-        else{} //ASIGNAR CLAVE EN VACIO
+        hash_campo_t campo;
+        hash->clave = clave;
+        hash->valor = valor;
+        hash->estado = OCUPADO;
+        if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
+            hash->tabla[borrado] = campo;
+        } 
+        else{ //ASIGNAR CLAVE EN VACIO
+            hash->tabla[vacio] = campo;
+        }
     }
     else{} //PISAR CLAVE ANTERIOR
 

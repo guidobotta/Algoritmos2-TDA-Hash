@@ -95,7 +95,7 @@ uint32_t hashing(const char *key) {
 // Devuelve -1 si no se encuentra la clave o la posicion de la clave.
 // Asigna la posicion del primer borrado, si hay, a borrado.
 // Asigna la posicion del vacio en caso de no estar el elemento.
-int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, int* borrado, int* vacio){
+int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, int* borrado, int* vacio, size_t largo){
     if((*borrado == -1) && (tabla[posicion]->estado == BORRADO)){
         *borrado = posicion;
     }
@@ -106,7 +106,7 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, 
     else if(tabla[posicion] == clave) return posicion;
     fact++;
 
-    return calcular_posicion(tabla, fact, posicion+(fact*fact) % hash->largo, clave, borrado);
+    return calcular_posicion(tabla, fact, posicion+(fact*fact)%largo, clave, borrado);
 }
 
 ////
@@ -184,6 +184,12 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     return hash;
 }
 
+void modificar_campo(hash_t* hash, hash_campo_t* tabla, int posicion){
+    hash->tabla[posicion]->clave = clave;
+    hash->tabla[posicion]->valor = dato;
+    hash->tabla[posicion]->estado = OCUPADO;
+}
+
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 
     if(hash->carga >= FACTOR_LIMITE){
@@ -194,6 +200,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     int borrado = -1;
     int vacio = -1;
 
+<<<<<<< HEAD
     int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
 
     hash_campo_t campo;
@@ -212,6 +219,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     else{
         hash->tabla[posicion] = campo;
     } //PISAR CLAVE ANTERIOR
+
     hash->cantidad++;
     hash->carga = hash->cantidad/hash->largo;
 
@@ -224,7 +232,7 @@ void *hash_obtener(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
-    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio);
+    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
 
     if (posicion == -1) return NULL;
     return hash->tabla[posicion]->valor;
@@ -234,7 +242,7 @@ bool hash_pertenece(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
-    if(calcular_posicion(hash->tabla, indice, clave, borrado, vacio) != -1) return true;
+    if(calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo) != -1) return true;
     return false;
 }
 

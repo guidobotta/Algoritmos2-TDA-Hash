@@ -99,7 +99,7 @@ uint32_t hashing(const char *key) {
 
 void modificar_carga(hash_t *hash){
     hash->carga = hash->cantidad/hash->largo;
-}
+} //Es necesario? Es una linea nomas
 
 bool redimensionar_hash(hash_t *hash){
 
@@ -111,18 +111,18 @@ bool redimensionar_hash(hash_t *hash){
     hash_campo_t* tabla_vieja = hash->tabla;
     hash->tabla = tabla_nueva;
     hash->largo = tam_nuevo; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
-    bool ok = true;
+    
     for(int i=0; i<tope; i++){
         //Cuidado. Hay que ver como se inicializa cada campo de la tabla
-        ok &= hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato);
+        if(hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato)){
+            free(tabla_nueva);
+            hash->tabla = tabla_vieja;
+            hash->largo = tope;
+            modificar_carga(hash); 
+            return false;
+        }
     }
-    if(!ok){
-        free(tabla_nueva);
-        hash->tabla = tabla_vieja;
-        hash->largo = tope;
-        modificar_carga(hash);
-        return false;
-    }
+    
     modificar_carga(hash);
     free(tabla_vieja);
 
@@ -203,9 +203,9 @@ size_t hash_cantidad(const hash_t *hash){
 void hash_destruir(hash_t *hash){
     for(int i=0; i < hash->largo; i++){
         //Si el estado no es ocupado no hago nada
-        if(hash->tabla[i].estado == OCUPADO){
-            hash->destruir_dato(hash->tabla[i].clave);
-            hash->destruir_dato(hash->tabla[i].dato);
+        if(hash->tabla[i]->estado == OCUPADO){
+            hash->destruir_dato(hash->tabla[i]->clave);
+            hash->destruir_dato(hash->tabla[i]->dato);
         }
     }
     free(hash->tabla);

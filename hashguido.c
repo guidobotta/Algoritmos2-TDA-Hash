@@ -209,7 +209,15 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 
 void *hash_borrar(hash_t *hash, const char *clave);
 
-void *hash_obtener(const hash_t *hash, const char *clave);
+void *hash_obtener(const hash_t *hash, const char *clave){
+    int indice = hashing(clave);
+    int borrado = 0;
+    int vacio = -1;
+    int posicion = (calcular_posicion(hash->tabla, indice, clave, borrado, vacio);
+
+    if (posicion == -1) return NULL;
+    return hash->tabla[posicion]->valor;
+}
 
 bool hash_pertenece(const hash_t *hash, const char *clave){
     int indice = hashing(clave);

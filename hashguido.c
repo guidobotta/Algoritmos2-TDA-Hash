@@ -97,10 +97,6 @@ uint32_t hashing(const char *key) {
 //FUNCION DE REDIMENSION
 ////
 
-void modificar_carga(hash_t *hash){
-    hash->carga = hash->cantidad/hash->largo;
-} //Es necesario? Es una linea nomas
-
 bool redimensionar_hash(hash_t *hash){
 
     size_t tam_nuevo = hash->largo*3; //Acá podemos llamar a una funcion que devuelva un numero primo como tam_nuevo
@@ -118,19 +114,15 @@ bool redimensionar_hash(hash_t *hash){
             free(tabla_nueva);
             hash->tabla = tabla_vieja;
             hash->largo = tope;
-            modificar_carga(hash); 
+            hash->carga = hash->cantidad/hash->largo; 
             return false;
         }
     }
     
-    modificar_carga(hash);
+    hash->carga = hash->cantidad/hash->largo;
     free(tabla_vieja);
 
     return true;
-}
-
-int calcular_posicion(hash_t* hash, int posicion){
-    return (posicion + i*i) % hash->largo;
 }
 
 /* ******************************************************************
@@ -167,6 +159,22 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     return hash;
 }
 
+// Devuelve -1 si no se encuentra la clave o la posicion de la clave.
+// Asigna la posicion del primer borrado, si hay, a borrado.
+// Asigna la posicion del vacio en caso de no estar el elemento.
+int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, int* borrado, int* vacio){
+    if((*borrado == -1) && (tabla[posicion]-> == ESTADO)){
+        *borrado = posicion;
+    }
+    else if(tabla[posicion]->estado == VACIO){
+        *vacio = posicion;
+        return -1;
+    }
+    else if(tabla[posicion] == clave) return posicion;
+    fact++;
+    return calcular_posicion(tabla, fact, posicion+(fact*fact), clave, borrado);
+}
+
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 
     if(hash->carga >= FACTOR_LIMITE){
@@ -174,18 +182,23 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     }
 
     int indice = hashing(clave);
-    int i = 1;
-    int indice_original = indice;
-    while((hash->tabla[indice]->estado == OCUPADO)||(hash->tabla[indice]->estado == BORRADO)){ //Si encuentra un indice donde este vacio introducirá
-        indice = calcular_posicion(hash, indice_original, i); //Mas adelante podemos cambiar esta funcion
-        i++;
+    int borrado = -1;
+    int vacio = -1;
+
+    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
+ 
+    if(posicion == -1){
+        if(borrado != -1){} //ASIGNAR CLAVE EN BORRADO
+        else{} //ASIGNAR CLAVE EN VACIO
     }
+    else{} //PISAR CLAVE ANTERIOR
+
     hash->tabla[indice]->estado = OCUPADO;
-    strcpy(hash->tabla[indice]->clave, clave);
+    strcpy(hash->tabla[indice]->clave, clave); //Es necesario?
     hash->tabla[indice]->valor = dato;
     hash->cantidad++;
 
-    modificar_carga(hash);
+    hash->carga = hash->cantidad/hash->largo;
 
     return true;
 }

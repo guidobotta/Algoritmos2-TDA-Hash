@@ -95,7 +95,7 @@ uint32_t hashing(const char *key) {
 // Devuelve -1 si no se encuentra la clave o la posicion de la clave.
 // Asigna la posicion del primer borrado, si hay, a borrado.
 // Asigna la posicion del vacio en caso de no estar el elemento.
-int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, int* borrado, int* vacio){
+int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, int* borrado, int* vacio, size_t largo){
     if((*borrado == -1) && (tabla[posicion]->estado == BORRADO)){
         *borrado = posicion;
     }
@@ -105,7 +105,7 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, 
     }
     else if(tabla[posicion] == clave) return posicion;
     fact++;
-    return calcular_posicion(tabla, fact, posicion+(fact*fact), clave, borrado);
+    return calcular_posicion(tabla, fact, (posicion+(fact*fact))%largo, clave, borrado, largo);
 }
 
 ////
@@ -199,7 +199,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     int borrado = -1;
     int vacio = -1;
 
-    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
+    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
  
     if(posicion == -1){
         //ASIGNAR CLAVE EN BORRADO
@@ -225,7 +225,7 @@ void *hash_obtener(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
-    int posicion = (calcular_posicion(hash->tabla, indice, clave, borrado, vacio);
+    int posicion = (calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
 
     if (posicion == -1) return NULL;
     return hash->tabla[posicion]->valor;
@@ -235,7 +235,7 @@ bool hash_pertenece(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
-    if(calcular_posicion(hash->tabla, indice, clave, borrado, vacio) != -1) return true;
+    if(calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo) != -1) return true;
     return false;
 }
 

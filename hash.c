@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stddef.h>
+
 #define TAM 33
 #define FACTOR_LIMITE 0,7
 #define VACIO '0'
@@ -34,6 +35,10 @@
  /* ******************************************************************
   *                      PRIMITIVAS PRIVADAS
   * *****************************************************************/
+
+////
+//FUNCION DE HASHING
+////
 
 //https://stackoverflow.com/questions/32795453/use-of-murmurhash-in-c
 uint32_t hashing(const char *key) {
@@ -88,6 +93,14 @@ uint32_t hashing(const char *key) {
    return hash;
 }
 
+////
+//FUNCION DE REDIMENSION
+////
+
+void modificar_carga(hash_t *hash){
+    hash->carga = hash->cantidad/hash->largo;
+}
+
 bool redimensionar_hash(hash_t *hash){
 
     size_t tam_nuevo = hash->largo*3; //Acá podemos llamar a una funcion que devuelva un numero primo como tam_nuevo
@@ -116,10 +129,6 @@ bool redimensionar_hash(hash_t *hash){
     return true;
 }
 
-void modificar_carga(hash_t *hash){
-    hash->carga = hash->cantidad/hash->largo;
-}
-
 int calcular_posicion(hash_t* hash, int posicion){
     return (posicion + i*i) % hash->largo;
 }
@@ -138,6 +147,15 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     if (!tabla){
         free(hash);
         return NULL;
+    }
+
+    hash_campo_t campo;
+    campo->clave = NULL;
+    campo->valor = NULL;
+    campo->estado = VACIO;
+
+    for(int i=0, i<TAM, i++){
+        tabla[i] = campo; //Asigno el mismo campo vacio;
     }
 
     hash->cantidad = 0;
@@ -183,7 +201,13 @@ size_t hash_cantidad(const hash_t *hash){
 }
 
 void hash_destruir(hash_t *hash){
-    //Liberar dato y clave de cada elemento con funcion destruir
+    for(int i=0; i < hash->largo; i++){
+        //Si el estado no es ocupado no hago nada
+        if(hash->tabla[i].estado == OCUPADO){
+            hash->destruir_dato(hash->tabla[i].clave);
+            hash->destruir_dato(hash->tabla[i].dato);
+        }
+    }
     free(hash->tabla);
     free(hash);
 }

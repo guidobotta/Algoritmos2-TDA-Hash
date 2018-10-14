@@ -105,7 +105,8 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, 
     }
     else if(tabla[posicion] == clave) return posicion;
     fact++;
-    return calcular_posicion(tabla, fact, posicion+(fact*fact), clave, borrado);
+
+    return calcular_posicion(tabla, fact, posicion+(fact*fact) % hash->largo, clave, borrado);
 }
 
 ////
@@ -195,26 +196,24 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 
     int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
 
+    hash_campo_t campo;
+    campo->clave = clave;
+    campo->valor = dato;
+    campo->estado = OCUPADO;
+
     if(posicion == -1){
-        hash_campo_t campo;
-        hash->clave = clave;
-        hash->valor = valor;
-        hash->estado = OCUPADO;
         if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
             hash->tabla[borrado] = campo;
-        } 
+        }
         else{ //ASIGNAR CLAVE EN VACIO
             hash->tabla[vacio] = campo;
         }
     }
-    else{} //PISAR CLAVE ANTERIOR
-
-    /*hash->tabla[indice]->estado = OCUPADO;
-    strcpy(hash->tabla[indice]->clave, clave); //Es necesario?
-    hash->tabla[indice]->valor = dato;
+    else{
+        hash->tabla[posicion] = campo;
+    } //PISAR CLAVE ANTERIOR
     hash->cantidad++;
-
-    hash->carga = hash->cantidad/hash->largo;*/
+    hash->carga = hash->cantidad/hash->largo;
 
     return true;
 }

@@ -141,15 +141,6 @@ bool redimensionar_hash(hash_t *hash){
 }
 
 /* ******************************************************************
- *                DEFINICION DEL STRUCT HASH
- * *****************************************************************/
-
- struct hash_iter{
-    hash_t* hash;
-    size_t posicion;
- };
-
-/* ******************************************************************
  *                      PRIMITIVAS DEL HASH
  * *****************************************************************/
 
@@ -256,6 +247,15 @@ void hash_destruir(hash_t *hash){
 }
 
 /* ******************************************************************
+ *                DEFINICION DEL HASH ITER
+ * *****************************************************************/
+
+ struct hash_iter{
+    hash_t* hash;
+    size_t posicion;
+ };
+
+/* ******************************************************************
  *                PRIMITIVAS DEL ITERADOR HASH
  * *****************************************************************/
 
@@ -263,15 +263,32 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
     hash_iter_t* hash_iter = malloc(sizeof(hash_iter_t));
     if (hash_iter) return NULL;
 
-    //COMPLETAR
+    hash_iter->hash = hash;
+    hash_iter->posicion = 0;
 
     return hash_iter;
 }
 
-bool hash_iter_avanzar(hash_iter_t *iter);
+bool hash_iter_al_final(const hash_iter_t *iter){
+    return(iter->posicion >= iter->hash->largo); //Chequear
+}
 
-const char *hash_iter_ver_actual(const hash_iter_t *iter);
+bool hash_iter_avanzar(hash_iter_t *iter){
+    iter->posicion++;
+    while(!hash_iter_al_final(iter)){
+        if(iter->hash->tabla[iter->posicion]->estado == OCUPADO) return true;
+        //Devuelve true si encuentra un campo ocupado
+        iter->posicion++;
+    }
+    //Devuelve false si llegó al final del hash
+    return false;
+}
 
-bool hash_iter_al_final(const hash_iter_t *iter);
+const char *hash_iter_ver_actual(const hash_iter_t *iter){
+    if(hash_iter_al_final(iter)) return NULL;
+    return iter->hash->tabla[iter->posicion]->valor;
+}
 
-void hash_iter_destruir(hash_iter_t* iter);
+void hash_iter_destruir(hash_iter_t* iter){
+    free(iter);
+}

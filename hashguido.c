@@ -105,11 +105,7 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, 
     }
     else if(tabla[posicion] == clave) return posicion;
     fact++;
-
-    return calcular_posicion(tabla, fact, posicion+(fact*fact)%largo, clave, borrado);
-    return calcular_posicion(tabla, fact, posicion+(fact*fact)%largo, clave, borrado);
-    return calcular_posicion(tabla, fact, posicion+(fact*fact)%largo, clave, borrado);
-    return calcular_posicion(tabla, fact, posicion+(fact*fact)%largo, clave, borrado);
+    return calcular_posicion(tabla, fact, (posicion+(fact*fact))%largo, clave, borrado, largo);
 }
 
 ////
@@ -123,25 +119,52 @@ bool redimensionar_hash(hash_t *hash){
     size_t tope = hash->largo;
     if(!tabla_nueva) return false;
 
-
-
-
-
+    hash_campo_t* tabla_vieja = hash->tabla;
+    hash->tabla = tabla_nueva;
+    hash->largo = tam_nuevo; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
+    
     for(int i=0; i<tope; i++){
         //Cuidado. Hay que ver como se inicializa cada campo de la tabla
         if(!hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato)){
-            hash->carga = hash->cantidad/hash->largo;
-            hash->carga = hash->cantidad/hash->largo;
-            hash->carga = hash->cantidad/hash->largo;
-            hash->carga = hash->cantidad/hash->largo;
-
-
-
-
+            free(tabla_nueva);
+            hash->tabla = tabla_vieja;
+            hash->largo = tope;
+            hash->carga = hash->cantidad/hash->largo; 
+            return false;
+        }
+    }
+    
     hash->carga = hash->cantidad/hash->largo;
     free(tabla_vieja);
 
     return true;
+}
+
+/* ******************************************************************
+ *                      PRIMITIVAS DEL HASH
+ * *****************************************************************/
+
+hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
+
+    hash_t* hash = malloc(sizeof(hash_t));
+    if (!hash) return NULL;
+
+    hash_campo_t* tabla = malloc(sizeof(hash_campo_t)*TAM); //#define TAM 33
+
+    if (!tabla){
+        free(hash);
+        return NULL;
+    }
+
+    hash_campo_t campo;
+    campo->clave = NULL;
+    campo->valor = NULL;
+    campo->estado = VACIO;
+
+    for(int i=0, i<TAM, i++){
+        tabla[i] = campo; //Asigno el mismo campo vacio;
+    }
+
     hash->cantidad = 0;
     hash->largo = TAM;
     hash->carga = 0;
@@ -167,64 +190,39 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     int borrado = -1;
     int vacio = -1;
 
-<<<<<<< HEAD
-    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
-
-    hash_campo_t campo;
-    campo->clave = clave;
-    campo->valor = dato;
-    campo->estado = OCUPADO;
-
+    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
+ 
     if(posicion == -1){
-        if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
-    hash_campo_t campo;
-    campo->clave = clave;
-    campo->valor = dato;
-    campo->estado = OCUPADO;
+        //ASIGNAR CLAVE EN BORRADO
+        if(borrado != -1) modificar_campo(hash, hash->tabla, borrado);
+        //ASIGNAR CLAVE EN VACIO
+        else modificar_campo(hash, hash->tabla, vacio); 
+               
+    }else hash->tabla[posicion]->valor = dato; //PISAR CLAVE ANTERIOR
 
-            hash->tabla[borrado] = campo;
-        if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
-    hash_campo_t campo;
-    campo->clave = clave;
-    campo->valor = dato;
-    campo->estado = OCUPADO;
-
-<<<<<<< HEAD
-            hash->tabla[borrado] = campo;
-        hash->tabla[posicion] = campo;
-    hash_campo_t campo;
-    campo->clave = clave;
-    campo->valor = dato;
-    campo->estado = OCUPADO;
-        hash->tabla[posicion] = campo;
-            hash->tabla[borrado] = campo;
-        if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
-            hash->tabla[borrado] = campo;
-        }
-        else{ //ASIGNAR CLAVE EN VACIO
-            hash->tabla[vacio] = campo;
-        }
-    }
-    else{
-        hash->tabla[posicion] = campo;
-    } //PISAR CLAVE ANTERIOR
-        hash->tabla[posicion] = campo;
-    } //PISAR CLAVE ANTERIOR
-
+    /*hash->tabla[indice]->estado = OCUPADO;
+    strcpy(hash->tabla[indice]->clave, clave); //Es necesario?
+    hash->tabla[indice]->valor = dato;
     hash->cantidad++;
-    hash->carga = hash->cantidad/hash->largo;
-    hash->carga = hash->cantidad/hash->largo;
+
+    hash->carga = hash->cantidad/hash->largo;*/
+
+    return true;
+}
+
+void *hash_borrar(hash_t *hash, const char *clave);
+
 void *hash_obtener(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
-    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
+    int posicion = (calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
 
-    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
+    if (posicion == -1) return NULL;
     return hash->tabla[posicion]->valor;
-    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
+}
 
-    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
+bool hash_pertenece(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
@@ -251,19 +249,6 @@ void hash_destruir(hash_t *hash){
 /* ******************************************************************
  *                DEFINICION DEL HASH ITER
  * *****************************************************************/
- *                DEFINICION DEL HASH ITER
- * *****************************************************************/
- *                DEFINICION DEL HASH ITER
-/* ******************************************************************
- *                DEFINICION DEL HASH ITER
- * *****************************************************************/
-
- struct hash_iter{
-    hash_t* hash;
-    size_t posicion;
- };
-
- * *****************************************************************/
 
  struct hash_iter{
     hash_t* hash;
@@ -271,82 +256,17 @@ void hash_destruir(hash_t *hash){
  };
 
 /* ******************************************************************
-    hash_iter->hash = hash;
-    hash_iter->posicion = 0;
- struct hash_iter{
-    hash_t* hash;
-    size_t posicion;
- };
-bool hash_iter_al_final(const hash_iter_t *iter){
-    return(iter->posicion >= iter->hash->largo); //Chequear
-}
- struct hash_iter{
-bool hash_iter_avanzar(hash_iter_t *iter){
-    iter->posicion++;
-    while(!hash_iter_al_final(iter)){
-        if(iter->hash->tabla[iter->posicion]->estado == OCUPADO) return true;
-        //Devuelve true si encuentra un campo ocupado
-        iter->posicion++;
-    }
-    //Devuelve false si llegó al final del hash
-    return false;
-}
-    hash_iter->posicion = 0;
-const char *hash_iter_ver_actual(const hash_iter_t *iter){
-    if(hash_iter_al_final(iter)) return NULL;
-    return iter->hash->tabla[iter->posicion]->valor;
-}
-    hash_t* hash;
-void hash_iter_destruir(hash_iter_t* iter){
-    free(iter);
-    size_t posicion;
- };
-bool hash_iter_al_final(const hash_iter_t *iter){
-    return(iter->posicion >= iter->hash->largo); //Chequear
-}
+ *                PRIMITIVAS DEL ITERADOR HASH
  * *****************************************************************/
-bool hash_iter_avanzar(hash_iter_t *iter){
-    iter->posicion++;
-    while(!hash_iter_al_final(iter)){
-        if(iter->hash->tabla[iter->posicion]->estado == OCUPADO) return true;
-        //Devuelve true si encuentra un campo ocupado
-        iter->posicion++;
-    }
-    //Devuelve false si llegó al final del hash
-    return false;
-}
-    hash_iter->posicion = 0;
-const char *hash_iter_ver_actual(const hash_iter_t *iter){
-    if(hash_iter_al_final(iter)) return NULL;
-    return iter->hash->tabla[iter->posicion]->valor;
-}
 
-void hash_iter_destruir(hash_iter_t* iter){
-    free(iter);
 hash_iter_t *hash_iter_crear(const hash_t *hash){
     hash_iter_t* hash_iter = malloc(sizeof(hash_iter_t));
-bool hash_iter_al_final(const hash_iter_t *iter){
-    return(iter->posicion >= iter->hash->largo); //Chequear
-}
+    if (hash_iter) return NULL;
 
-bool hash_iter_avanzar(hash_iter_t *iter){
-    iter->posicion++;
-    while(!hash_iter_al_final(iter)){
-        if(iter->hash->tabla[iter->posicion]->estado == OCUPADO) return true;
-        //Devuelve true si encuentra un campo ocupado
-        iter->posicion++;
-    }
-    //Devuelve false si llegó al final del hash
-    return false;
-}
+    hash_iter->hash = hash;
     hash_iter->posicion = 0;
-const char *hash_iter_ver_actual(const hash_iter_t *iter){
-    if(hash_iter_al_final(iter)) return NULL;
-    return iter->hash->tabla[iter->posicion]->valor;
-}
+
     return hash_iter;
-void hash_iter_destruir(hash_iter_t* iter){
-    free(iter);
 }
 
 bool hash_iter_al_final(const hash_iter_t *iter){

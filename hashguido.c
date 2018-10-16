@@ -105,7 +105,8 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, 
     }
     else if(tabla[posicion] == clave) return posicion;
     fact++;
-    return calcular_posicion(tabla, fact, (posicion+(fact*fact))%largo, clave, borrado, largo);
+
+    return calcular_posicion(tabla, fact, posicion+(fact*fact)%largo, clave, borrado);
 }
 
 ////
@@ -122,18 +123,18 @@ bool redimensionar_hash(hash_t *hash){
     hash_campo_t* tabla_vieja = hash->tabla;
     hash->tabla = tabla_nueva;
     hash->largo = tam_nuevo; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
-    
+
     for(int i=0; i<tope; i++){
         //Cuidado. Hay que ver como se inicializa cada campo de la tabla
         if(!hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato)){
             free(tabla_nueva);
             hash->tabla = tabla_vieja;
             hash->largo = tope;
-            hash->carga = hash->cantidad/hash->largo; 
+            hash->carga = hash->cantidad/hash->largo;
             return false;
         }
     }
-    
+
     hash->carga = hash->cantidad/hash->largo;
     free(tabla_vieja);
 
@@ -190,22 +191,29 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
     int borrado = -1;
     int vacio = -1;
 
-    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
- 
+<<<<<<< HEAD
+    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio);
+
+    hash_campo_t campo;
+    campo->clave = clave;
+    campo->valor = dato;
+    campo->estado = OCUPADO;
+
+<<<<<<< HEAD
     if(posicion == -1){
-        //ASIGNAR CLAVE EN BORRADO
-        if(borrado != -1) modificar_campo(hash, hash->tabla, borrado);
-        //ASIGNAR CLAVE EN VACIO
-        else modificar_campo(hash, hash->tabla, vacio); 
-               
-    }else hash->tabla[posicion]->valor = dato; //PISAR CLAVE ANTERIOR
+        if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
+            hash->tabla[borrado] = campo;
+        }
+        else{ //ASIGNAR CLAVE EN VACIO
+            hash->tabla[vacio] = campo;
+        }
+    }
+    else{
+        hash->tabla[posicion] = campo;
+    } //PISAR CLAVE ANTERIOR
 
-    /*hash->tabla[indice]->estado = OCUPADO;
-    strcpy(hash->tabla[indice]->clave, clave); //Es necesario?
-    hash->tabla[indice]->valor = dato;
     hash->cantidad++;
-
-    hash->carga = hash->cantidad/hash->largo;*/
+    hash->carga = hash->cantidad/hash->largo;
 
     return true;
 }
@@ -216,7 +224,7 @@ void *hash_obtener(const hash_t *hash, const char *clave){
     int indice = hashing(clave);
     int borrado = 0;
     int vacio = -1;
-    int posicion = (calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
+    int posicion = calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
 
     if (posicion == -1) return NULL;
     return hash->tabla[posicion]->valor;

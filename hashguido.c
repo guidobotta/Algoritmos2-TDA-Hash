@@ -2,58 +2,59 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <string.h>
 
-#define TAM 33
-#define FACTOR_LIMITE 0,7
-#define VACIO '0'
-#define OCUPADO '1'
-#define BORRADO '2'
+#define TAM 37
+#define FACTOR_LIMITE 0.2
+#define VACIO 'V'
+#define OCUPADO 'O'
+#define BORRADO 'B'
 
 /* ******************************************************************
  *                DEFINICION DE LOS TIPOS DE DATOS
  * *****************************************************************/
 
- typedef struct hash_campo{
+typedef struct hash_campo{
     char *clave;
     void *valor;
     char estado; //0 = vacio, 1 = ocupado, 2 = borrado;
- }hash_campo_t;
+}hash_campo_t;
 
- struct hash{
+struct hash{
     size_t cantidad;
     size_t largo;
     float carga;
     hash_campo_t *tabla;
     hash_destruir_dato_t destruir_dato;
- };
+};
 
- /* ******************************************************************
-  *                      PRIMITIVAS PRIVADAS
-  * *****************************************************************/
+/* ******************************************************************
+ *                      PRIMITIVAS PRIVADAS
+ * *****************************************************************/
 
 ////
 //FUNCION DE HASHING
 ////
 
 //https://stackoverflow.com/questions/32795453/use-of-murmurhash-in-c
-uint32_t hashing(const char *key) {
+unsigned int _hashing_(const char *key) {
 
-    static const uint32_t c1 = 0xcc9e2d51;
-    static const uint32_t c2 = 0x1b873593;
-    static const uint32_t r1 = 15;
-    static const uint32_t r2 = 13;
-    static const uint32_t m = 5;
-    static const uint32_t n = 0xe6546b64;
+    static const unsigned int c1 = 0xcc9e2d51;
+    static const unsigned int c2 = 0x1b873593;
+    static const unsigned int r1 = 15;
+    static const unsigned int r2 = 13;
+    static const unsigned int m = 5;
+    static const unsigned int n = 0xe6546b64;
 
-    uint32_t len = strlen(key);
-    uint32_t seed = 42 //Un numero aleatorio, pero constante
-    uint32_t hash = seed;
+    unsigned int len = (unsigned int)strlen(key);
+    unsigned int seed = 42; //Un numero aleatorio, pero constante
+    unsigned int hash = seed;
 
     const int nblocks = len / 4;
-    const uint32_t *blocks = (const uint32_t *) key;
+    const unsigned int *blocks = (const unsigned int *) key;
     int i;
     for (i = 0; i < nblocks; i++) {
-        uint32_t k = blocks[i];
+        unsigned int k = blocks[i];
         k *= c1;
         k = (k << r1) | (k >> (32 - r1));
         k *= c2;
@@ -62,8 +63,8 @@ uint32_t hashing(const char *key) {
         hash = ((hash << r2) | (hash >> (32 - r2))) * m + n;
     }
 
-    const uint8_t *tail = (const uint8_t *) (key + nblocks * 4);
-    uint32_t k1 = 0;
+    const unsigned char *tail = (const unsigned char *) (key + nblocks * 4);
+    unsigned int k1 = 0;
 
     switch (len & 3) {
     case 3:
@@ -88,6 +89,10 @@ uint32_t hashing(const char *key) {
    return hash;
 }
 
+unsigned int hashing(const char *key, const hash_t* hash){
+    return _hashing_(key) % (unsigned int)hash->largo;
+}
+
 ////
 //FUNCION DE CALCULADO DE POSICION
 ////
@@ -95,17 +100,34 @@ uint32_t hashing(const char *key) {
 // Devuelve -1 si no se encuentra la clave o la posicion de la clave.
 // Asigna la posicion del primer borrado, si hay, a borrado.
 // Asigna la posicion del vacio en caso de no estar el elemento.
-int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, char* clave, int* borrado, int* vacio, size_t largo){
-    if((*borrado == -1) && (tabla[posicion]->estado == BORRADO)){
-        *borrado = posicion;
+int _calcular_posicion_(hash_campo_t* tabla, int fact, int posicion, const char* clave, int* borrado, int* vacio, size_t largo){
+    if((*borrado == -1) && (tabla[posicion].estado == BORRADO)){
+        *borrado = posicion;if(posicion < 0) posicion *= -1;
     }
-    else if(tabla[posicion]->estado == VACIO){
+    else if(tabla[posicion].estado == VACIO){
         *vacio = posicion;
         return -1;
     }
-    else if(tabla[posicion] == clave) return posicion;
+    else if(tabla[posicion].clave == clave) return posicion;
     fact++;
-    return calcular_posicion(tabla, fact, (posicion+(fact*fact))%largo, clave, borrado, largo);
+
+    return _calcular_posicion_(tabla, fact, (posicion+(fact*fact))%(int)largo, clave, borrado, vacio, largo);
+}
+
+int calcular_posicion(hash_campo_t* tabla, int posicion, const char* clave, int* borrado, int* vacio, size_t largo){
+    int fact = 0;
+    return _calcular_posicion_(tabla, fact, posicion, clave, borrado, vacio, largo);
+}
+
+void inicializar_tabla(hash_campo_t *tabla, size_t tam){
+    hash_campo_t campo;
+    campo.clave = NULL;
+    campo.valor = NULL;
+    campo.estado = VACIO;
+
+    for(int i=0; i<tam; i++){
+        tabla[i] = campo; //Asigno el mismo campo vacio;
+    }
 }
 
 ////
@@ -120,130 +142,36 @@ bool redimensionar_hash(hash_t *hash){
     if(!tabla_nueva) return false;
 
     hash_campo_t* tabla_vieja = hash->tabla;
+    inicializar_tabla(tabla_nueva, tam_nuevo);
     hash->tabla = tabla_nueva;
     hash->largo = tam_nuevo; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
-    
+    hash->carga = ((float)hash->cantidad)/(float)hash->largo;
+    hash->cantidad = 0;
+
     for(int i=0; i<tope; i++){
         //Cuidado. Hay que ver como se inicializa cada campo de la tabla
-        if(!hash_guardar(hash_nuevo, tabla_vieja[i]->clave, tabla_vieja[i]->dato)){
-            free(tabla_nueva);
-            hash->tabla = tabla_vieja;
-            hash->largo = tope;
-            hash->carga = hash->cantidad/hash->largo; 
-            return false;
+        if(tabla_vieja[i].clave){
+            if(!hash_guardar(hash, tabla_vieja[i].clave, tabla_vieja[i].valor)){
+                free(tabla_nueva);
+                hash->tabla = tabla_vieja;
+                hash->largo = tope;
+                hash->carga = ((float)hash->cantidad)/(float)hash->largo;
+                return false;
+            }
         }
     }
-    
-    hash->carga = hash->cantidad/hash->largo;
+
+    hash->carga = ((float)hash->cantidad)/(float)hash->largo;
     free(tabla_vieja);
 
     return true;
 }
 
-/* ******************************************************************
- *                      PRIMITIVAS DEL HASH
- * *****************************************************************/
 
-hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
-
-    hash_t* hash = malloc(sizeof(hash_t));
-    if (!hash) return NULL;
-
-    hash_campo_t* tabla = malloc(sizeof(hash_campo_t)*TAM); //#define TAM 33
-
-    if (!tabla){
-        free(hash);
-        return NULL;
-    }
-
-    hash_campo_t campo;
-    campo->clave = NULL;
-    campo->valor = NULL;
-    campo->estado = VACIO;
-
-    for(int i=0, i<TAM, i++){
-        tabla[i] = campo; //Asigno el mismo campo vacio;
-    }
-
-    hash->cantidad = 0;
-    hash->largo = TAM;
-    hash->carga = 0;
-    hash->tabla = tabla;
-    hash->destruir_dato = destruir_dato;
-
-    return hash;
-}
-
-void modificar_campo(hash_t* hash, hash_campo_t* tabla, int posicion){
-    hash->tabla[posicion]->clave = clave;
-    hash->tabla[posicion]->valor = dato;
-    hash->tabla[posicion]->estado = OCUPADO;
-}
-
-bool hash_guardar(hash_t *hash, const char *clave, void *dato){
-
-    if(hash->carga >= FACTOR_LIMITE){
-        if(redimensionar_hash(hash)) return false;
-    }
-
-    int indice = hashing(clave);
-    int borrado = -1;
-    int vacio = -1;
-
-    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
- 
-    if(posicion == -1){
-        //ASIGNAR CLAVE EN BORRADO
-        if(borrado != -1) modificar_campo(hash, hash->tabla, borrado);
-        //ASIGNAR CLAVE EN VACIO
-        else modificar_campo(hash, hash->tabla, vacio); 
-               
-    }else hash->tabla[posicion]->valor = dato; //PISAR CLAVE ANTERIOR
-
-    /*hash->tabla[indice]->estado = OCUPADO;
-    strcpy(hash->tabla[indice]->clave, clave); //Es necesario?
-    hash->tabla[indice]->valor = dato;
-    hash->cantidad++;
-
-    hash->carga = hash->cantidad/hash->largo;*/
-
-    return true;
-}
-
-void *hash_borrar(hash_t *hash, const char *clave);
-
-void *hash_obtener(const hash_t *hash, const char *clave){
-    int indice = hashing(clave);
-    int borrado = 0;
-    int vacio = -1;
-    int posicion = (calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo);
-
-    if (posicion == -1) return NULL;
-    return hash->tabla[posicion]->valor;
-}
-
-bool hash_pertenece(const hash_t *hash, const char *clave){
-    int indice = hashing(clave);
-    int borrado = 0;
-    int vacio = -1;
-    if(calcular_posicion(hash->tabla, indice, clave, borrado, vacio, hash->largo) != -1) return true;
-    return false;
-}
-
-size_t hash_cantidad(const hash_t *hash){
-    return hash->cantidad;
-}
-
-void hash_destruir(hash_t *hash){
-    for(int i=0; i < hash->largo; i++){
-        //Si el estado no es ocupado no hago nada
-        if(hash->tabla[i]->estado == OCUPADO){
-            hash->destruir_dato(hash->tabla[i]->clave);
-            hash->destruir_dato(hash->tabla[i]->dato);
-        }
-    }
-    free(hash->tabla);
-    free(hash);
+void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion){
+    hash->tabla[posicion].clave = (char*)clave;
+    hash->tabla[posicion].valor = dato;
+    hash->tabla[posicion].estado = OCUPADO;
 }
 
 /* ******************************************************************

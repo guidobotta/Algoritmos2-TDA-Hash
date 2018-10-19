@@ -266,7 +266,6 @@ static void prueba_hash_volumen(size_t largo, bool debug)
 
     /* Destruye el hash - debería liberar los enteros */
     hash_destruir(hash);
-
 }
 
 static ssize_t buscar(const char* clave, char* claves[], size_t largo)

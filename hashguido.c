@@ -175,6 +175,119 @@ void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion){
 }
 
 /* ******************************************************************
+ *                      PRIMITIVAS DEL HASH
+ * *****************************************************************/
+
+hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
+
+    hash_t* hash = malloc(sizeof(hash_t));
+    if (!hash) return NULL;
+
+    hash_campo_t* tabla = malloc(sizeof(hash_campo_t)*TAM); //#define TAM 33
+
+    if (!tabla){
+        free(hash);
+        return NULL;
+    }
+
+    inicializar_tabla(tabla, TAM);
+    hash->cantidad = 0;
+    hash->largo = TAM;
+    hash->carga = 0;
+    hash->tabla = tabla;
+    hash->destruir_dato = destruir_dato;
+
+    return hash;
+}
+
+bool hash_guardar(hash_t *hash, const char *clave, void *dato){
+
+    if(hash->carga >= FACTOR_LIMITE){
+        if(!redimensionar_hash(hash)) return false;
+    }
+
+    int indice = hashing(clave, hash);
+    int borrado = -1;
+    int vacio = -1;
+    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
+
+
+    if(posicion == -1){
+        if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
+            modificar_campo(hash, dato, clave, borrado);
+        }
+        else{ //ASIGNAR CLAVE EN VACIO
+            modificar_campo(hash, dato, clave, vacio);
+        }
+    }
+    else{
+        modificar_campo(hash, dato, clave, posicion);
+        return true;
+    } //PISAR CLAVE ANTERIOR
+
+    hash->cantidad++;
+    hash->carga = ((float)hash->cantidad)/(float)hash->largo;
+
+    return true;
+}
+
+void *hash_borrar(hash_t *hash, const char *clave){
+    int posicion = 0;
+    int vacio = 0;
+    void *dato = NULL;
+    int borrado = 0;
+    int indice = hashing(clave, hash);
+    if((posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo)) == -1) return NULL;
+    hash_campo_t campo;
+    campo.clave = NULL;
+    campo.valor = NULL;
+    campo.estado = BORRADO;
+
+    dato = hash->tabla[posicion].valor;
+    hash->tabla[posicion] = campo;
+    hash->cantidad--;
+    return dato;
+
+}
+
+void *hash_obtener(const hash_t *hash, const char *clave){
+    int indice = hashing(clave, hash);
+    int borrado = 0;
+    int vacio = -1;
+    int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
+
+    if (posicion == -1) return NULL;
+    return hash->tabla[posicion].valor;
+}
+
+bool hash_pertenece(const hash_t *hash, const char *clave){
+    int indice = hashing(clave, hash);
+    int borrado = 0;
+    int vacio = -1;
+    if(calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo) != -1) return true;
+    return false;
+}
+
+size_t hash_cantidad(const hash_t *hash){
+    return hash->cantidad;
+}
+
+void hash_destruir(hash_t *hash){
+    if(hash->destruir_dato){
+        for(int i=0; i < hash->largo; i++){
+            //Si el estado no es ocupado no hago nada
+            if(hash->tabla[i].estado == OCUPADO){
+                //hash->destruir_dato(hash->tabla[i].clave);
+                hash->destruir_dato(hash->tabla[i].valor);
+            }
+        }
+    }
+
+    free(hash->tabla);
+    free(hash);
+}
+
+/* ******************************************************************
  *                DEFINICION DEL HASH ITER
  * *****************************************************************/
 
@@ -187,36 +300,36 @@ void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion){
  *                PRIMITIVAS DEL ITERADOR HASH
  * *****************************************************************/
 
-hash_iter_t *hash_iter_crear(const hash_t *hash){
-    hash_iter_t* hash_iter = malloc(sizeof(hash_iter_t));
-    if (hash_iter) return NULL;
+ hash_iter_t *hash_iter_crear(const hash_t *hash){
+     hash_iter_t* hash_iter = malloc(sizeof(hash_iter_t));
+     if (hash_iter) return NULL;
 
-    hash_iter->hash = hash;
-    hash_iter->posicion = 0;
+     hash_iter->hash = (hash_t*)hash;
+     hash_iter->posicion = 0;
 
-    return hash_iter;
-}
+     return hash_iter;
+ }
 
-bool hash_iter_al_final(const hash_iter_t *iter){
-    return(iter->posicion >= iter->hash->largo); //Chequear
-}
+ bool hash_iter_al_final(const hash_iter_t *iter){
+     return(iter->posicion >= iter->hash->largo); //Chequear
+ }
 
-bool hash_iter_avanzar(hash_iter_t *iter){
-    iter->posicion++;
-    while(!hash_iter_al_final(iter)){
-        if(iter->hash->tabla[iter->posicion]->estado == OCUPADO) return true;
-        //Devuelve true si encuentra un campo ocupado
-        iter->posicion++;
-    }
-    //Devuelve false si llegó al final del hash
-    return false;
-}
+ bool hash_iter_avanzar(hash_iter_t *iter){
+     iter->posicion++;
+     while(!hash_iter_al_final(iter)){
+         if(iter->hash->tabla[iter->posicion].estado == OCUPADO) return true;
+         //Devuelve true si encuentra un campo ocupado
+         iter->posicion++;
+     }
+     //Devuelve false si llegó al final del hash
+     return false;
+ }
 
-const char *hash_iter_ver_actual(const hash_iter_t *iter){
-    if(hash_iter_al_final(iter)) return NULL;
-    return iter->hash->tabla[iter->posicion]->valor;
-}
+ const char *hash_iter_ver_actual(const hash_iter_t *iter){
+     if(hash_iter_al_final(iter)) return NULL;
+     return iter->hash->tabla[iter->posicion].valor;
+ }
 
-void hash_iter_destruir(hash_iter_t* iter){
-    free(iter);
-}
+ void hash_iter_destruir(hash_iter_t* iter){
+     free(iter);
+ }

@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -g -std=c99 -Wall -Wconversion -Wno-sign-conversion -Werror 
 VFLAGS = --leak-check=full --track-origins=yes --show-reachable=yes
 
-CFILES = testing.c hashguido.c pruebas_catedra.c main.c
+CFILES = testing.c hash.c pruebas_catedra.c main.c
 HFILES = testing.h hash.h
 EXEC_S = pruebas
 

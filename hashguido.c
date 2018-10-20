@@ -18,19 +18,19 @@
  *                DEFINICION DE LOS TIPOS DE DATOS
  * *****************************************************************/
 
- typedef struct hash_campo{
+typedef struct hash_campo{
     char *clave;
     void *valor;
     char estado; //0 = vacio, 1 = ocupado, 2 = borrado;
- }hash_campo_t;
+}hash_campo_t;
 
- struct hash{
+struct hash{
     size_t cantidad;
     size_t largo;
     float carga;
     hash_campo_t *tabla;
     hash_destruir_dato_t destruir_dato;
- };
+};
 
  /* ******************************************************************
   *                      PRIMITIVAS PRIVADAS
@@ -99,7 +99,6 @@ unsigned int hashing(const char *key, const hash_t* hash){
     return _hashing_(key) % (unsigned int)hash->largo;
 }
 
-
 ////
 //FUNCION DE CALCULADO DE POSICION
 ////
@@ -107,6 +106,7 @@ unsigned int hashing(const char *key, const hash_t* hash){
 // Devuelve -1 si no se encuentra la clave o la posicion de la clave.
 // Asigna la posicion del primer borrado, si hay, a borrado.
 // Asigna la posicion del vacio en caso de no estar el elemento.
+
 int _calcular_posicion_(hash_campo_t* tabla, int fact, int posicion, const char* clave, int* borrado, int* vacio, size_t largo){
     if((*borrado == -1) && (tabla[posicion].estado == BORRADO)){
         *borrado = posicion;if(posicion < 0) posicion *= -1;
@@ -128,6 +128,8 @@ int calcular_posicion(hash_campo_t* tabla, int posicion, const char* clave, int*
     return _calcular_posicion_(tabla, fact, posicion, clave, borrado, vacio, largo);
 }
 
+// Inicializar una tabla
+
 void inicializar_tabla(hash_campo_t *tabla, size_t tam){
     hash_campo_t campo;
     campo.clave = NULL;
@@ -143,6 +145,8 @@ void inicializar_tabla(hash_campo_t *tabla, size_t tam){
 //FUNCION DE REDIMENSION
 ////
 
+// Modificar campo
+
 void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion, bool redimension){
     if(!redimension){
         char *clave_dinamica = malloc(sizeof(char)*strlen(clave)+1);
@@ -155,8 +159,11 @@ void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion, 
     hash->tabla[posicion].estado = OCUPADO;
 }
 
+// Obtener nuevo largo
+
 size_t nuevo_largo(hash_t *hash, bool aumentar){
-    size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819, 1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};//Primos
+    size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
+    1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};//Primos
     int i=0;
     if(hash->largo >= vector[TAM_PRIMOS-1]){
         if(aumentar) return hash->largo*2;
@@ -178,6 +185,8 @@ size_t nuevo_largo(hash_t *hash, bool aumentar){
 
     return vector[i];
 }
+
+// Redimensionar Hash
 
 bool redimensionar_hash(hash_t *hash, bool aumentar){
 
@@ -211,6 +220,10 @@ bool redimensionar_hash(hash_t *hash, bool aumentar){
 
     return true;
 }
+
+///
+//FUNCION DE GUARDAR
+///
 
 bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimension){
 
@@ -300,7 +313,6 @@ void *hash_borrar(hash_t *hash, const char *clave){
         if(!redimensionar_hash(hash, DISMINUIR)) return false;
     }
     return dato;
-
 }
 
 void *hash_obtener(const hash_t *hash, const char *clave){

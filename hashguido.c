@@ -14,6 +14,9 @@
 #define DISMINUIR false
 #define TAM_PRIMOS 26
 
+const size_t _VEC_PRIMOS_[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
+    1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};//Primos
+
 /* ******************************************************************
  *                DEFINICION DE LOS TIPOS DE DATOS
  * *****************************************************************/
@@ -30,6 +33,7 @@ struct hash{
     float carga;
     hash_campo_t *tabla;
     hash_destruir_dato_t destruir_dato;
+    unsigned char pos_tam;
 };
 
  /* ******************************************************************
@@ -124,7 +128,7 @@ int _calcular_posicion_(hash_campo_t* tabla, int fact, int posicion, const char*
 }
 
 int calcular_posicion(hash_campo_t* tabla, int posicion, const char* clave, int* borrado, int* vacio, size_t largo){
-    int fact = 0;
+    int fact = 0; //SE PUEDE PASAR DIRECTAMENTE UN 0 A LA FUNCION DE CALCULAR POSICION
     return _calcular_posicion_(tabla, fact, posicion, clave, borrado, vacio, largo);
 }
 
@@ -159,38 +163,15 @@ void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion, 
     hash->tabla[posicion].estado = OCUPADO;
 }
 
-// Obtener nuevo largo
-
-size_t nuevo_largo(hash_t *hash, bool aumentar){
-    size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
-    1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};//Primos
-    int i=0;
-    if(hash->largo >= vector[TAM_PRIMOS-1]){
-        if(aumentar) return hash->largo*2;
-        return hash->largo/2;
-    }
-    for(i=0; i<TAM_PRIMOS; i++){
-        if(vector[i] == hash->largo){
-            break;
-        }
-    }
-
-    if(aumentar){
-        i++;
-    }else{
-        i -= 2;
-    }
-    if(i >= TAM_PRIMOS) return hash->largo*2;
-    if(i<0) return vector[0];
-
-    return vector[i];
-}
-
 // Redimensionar Hash
 
 bool redimensionar_hash(hash_t *hash, bool aumentar){
-
-    size_t tam_nuevo = nuevo_largo(hash, aumentar); //Le pasamos false para disminuir el largo y true para aumentar
+    if (aumentar) hash->pos_tam ++;
+    else{
+        hash->pos_tam --;
+        hash->pos_tam --; 
+    } 
+    size_t tam_nuevo = _VEC_PRIMOS_[hash->pos_tam];
     hash_campo_t* tabla_nueva = malloc(sizeof(hash_campo_t)*tam_nuevo);
     size_t tope = hash->largo;
     if(!tabla_nueva) return false;
@@ -235,7 +216,6 @@ bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimensio
     int borrado = -1;
     int vacio = -1;
     int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
-
 
     if(posicion == -1){
         if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO
@@ -282,6 +262,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     hash->carga = 0;
     hash->tabla = tabla;
     hash->destruir_dato = destruir_dato;
+    hash->pos_tam = 0;
 
     return hash;
 }

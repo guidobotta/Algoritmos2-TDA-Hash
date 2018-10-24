@@ -62,6 +62,10 @@ size_t hash_cantidad(const hash_t *hash);
  */
 void hash_destruir(hash_t *hash);
 
+//SACAR ESTO ANTES DE LA ENTREGA
+size_t ver_colisiones();
+//SACAR ESTO ANTES DE LA ENTREGA
+
 /* ******************************************************************
  *                PRIMITIVAS DEL ITERADOR HASH
  * *****************************************************************/

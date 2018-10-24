@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#define TAM 37
+#define TAM 701819
 #define FACTOR_AUMENTO 0.7
 #define FACTOR_DISMINUCION 0.2
 #define VACIO 'V'
@@ -17,6 +17,12 @@
 /* ******************************************************************
  *                DEFINICION DE LOS TIPOS DE DATOS
  * *****************************************************************/
+
+size_t colisiones = 0;
+
+size_t ver_colisiones(){
+    return colisiones;
+}
 
  typedef struct hash_campo{
     char *clave;
@@ -119,7 +125,7 @@ int _calcular_posicion_(hash_campo_t* tabla, int fact, int posicion, const char*
         if(!strcmp(tabla[posicion].clave,clave)) return posicion;
     }
     fact++;
-
+    colisiones++;
     return _calcular_posicion_(tabla, fact, (posicion+(fact*fact))%(int)largo, clave, borrado, vacio, largo);
 }
 
@@ -222,7 +228,6 @@ bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimensio
     int borrado = -1;
     int vacio = -1;
     int posicion = calcular_posicion(hash->tabla, indice, clave, &borrado, &vacio, hash->largo);
-
 
     if(posicion == -1){
         if(borrado != -1){ //ASIGNAR CLAVE EN BORRADO

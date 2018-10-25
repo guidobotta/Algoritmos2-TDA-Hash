@@ -95,8 +95,21 @@ unsigned int _hashing_(const char *key) {
    return hash;
 }
 
+
+unsigned int _hashing2_(const char* p)
+{
+  unsigned long int h = 2166136261UL;
+  unsigned long int i;
+  unsigned long int length = strlen(p);
+
+  for(i = 0; i < length; i++)
+    h = (h * 16777619) ^ p[i] ;
+
+  return (unsigned int)h;
+}
+
 unsigned int hashing(const char *key, const hash_t* hash){
-    return _hashing_(key) % (unsigned int)hash->largo;
+    return _hashing2_(key) % (unsigned int)hash->largo;
 }
 
 ////

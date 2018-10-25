@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include "murmurhash.h"
 
 #define TAM 37
 #define FACTOR_AUMENTO 0.6
@@ -15,7 +14,7 @@
 #define DISMINUIR false
 #define TAM_PRIMOS 26
 
-const size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
+size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
     1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};//Primos
 
 /* ******************************************************************
@@ -54,8 +53,18 @@ bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimensio
 //FUNCION DE HASHING
 ////
 
+unsigned int hasheando(unsigned char *str){
+    unsigned int hash = 5381;
+    int c;
+
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
 unsigned int hashing(const char *key, const hash_t* hash){
-    return murmurhash(key, (unsigned int)strlen(key), 37) % (unsigned int)hash->largo;
+    return hasheando((unsigned char*)key) % (unsigned int)hash->largo;
 }
 
 ////

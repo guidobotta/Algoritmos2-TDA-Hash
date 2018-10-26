@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define TAM 37
-#define FACTOR_AUMENTO 0.6
+#define FACTOR_AUMENTO 0.57
 #define FACTOR_DISMINUCION 0.1
 #define VACIO 'V'
 #define OCUPADO 'O'
@@ -13,23 +13,25 @@
 #define AUMENTAR true
 #define DISMINUIR false
 #define TAM_PRIMOS 26
+//Vector de numeros primos para el tamaño de la tabla.
+const size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
+    1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};
 
-size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
-    1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};//Primos
 
-/* ******************************************************************
+/* ******************************************************************+
  *                DEFINICION DE LOS TIPOS DE DATOS
  * *****************************************************************/
 
 typedef struct hash_campo{
     char *clave;
     void *valor;
-    char estado; //0 = vacio, 1 = ocupado, 2 = borrado;
+    char estado;
 }hash_campo_t;
 
 struct hash{
     size_t cantidad;
     size_t largo;
+    size_t pos_tam;
     float carga;
     hash_campo_t *tabla;
     hash_destruir_dato_t destruir_dato;
@@ -52,9 +54,9 @@ bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimensio
 ////
 //FUNCION DE HASHING
 ////
-
-unsigned int hasheando(unsigned char *str){
-    unsigned int hash = 5381;
+//Funcion de hash djb2 obtenida de internet.
+size_t funcion_hash(unsigned char *str){
+    size_t hash = 5381;
     int c;
 
     while ((c = *str++))
@@ -62,9 +64,18 @@ unsigned int hasheando(unsigned char *str){
 
     return hash;
 }
+//Funcion de hash K&R obtenida de internet.
+size_t funcion_hash2(unsigned char *s)
+{
+    size_t hashval;
+
+    for (hashval = 0; *s != '\0'; s++)
+        hashval = *s + 31*hashval;
+    return hashval;
+}
 
 unsigned int hashing(const char *key, const hash_t* hash){
-    return hasheando((unsigned char*)key) % (unsigned int)hash->largo;
+    return (unsigned int)(funcion_hash2((unsigned char*)key) % hash->largo);
 }
 
 ////
@@ -85,36 +96,7 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, const char* c
     }
     fact++;
 
-    return calcular_posicion(tabla, fact, (posicion+(fact*fact))%(int)largo, clave, vacio, largo);
-}
-
-////
-//FUNCION DE REDIMENSION
-////
-
-// Obtener nuevo largo
-
-size_t nuevo_largo(hash_t *hash, bool aumentar){
-    int i=0;
-    if(hash->largo >= vector[TAM_PRIMOS-1]){
-        if(aumentar) return hash->largo*2;
-        return hash->largo/2;
-    }
-    for(i=0; i<TAM_PRIMOS; i++){
-        if(vector[i] == hash->largo){
-            break;
-        }
-    }
-
-    if(aumentar){
-        i++;
-    }else{
-        i -= 2;
-    }
-    if(i >= TAM_PRIMOS) return hash->largo*2; //No se si es necesario
-    if(i<0) return vector[0];
-
-    return vector[i];
+    return calcular_posicion(tabla, fact, (int)((posicion+(fact*fact)) % largo), clave, vacio, largo);
 }
 
 // Inicializar una tabla
@@ -133,8 +115,11 @@ void inicializar_tabla(hash_campo_t *tabla, size_t tam){
 // Redimensionar Hash
 
 bool redimensionar_hash(hash_t *hash, bool aumentar){
-
-    size_t tam_nuevo = nuevo_largo(hash, aumentar); //Le pasamos false para disminuir el largo y true para aumentar
+    if(aumentar) hash->pos_tam++; //Duplico el tamaño
+    else{
+       hash->pos_tam -= 2; //Divido entre 4
+    }
+    size_t tam_nuevo = vector[hash->pos_tam];
     hash_campo_t* tabla_nueva = malloc(sizeof(hash_campo_t)*tam_nuevo);
     size_t tope = hash->largo;
     if(!tabla_nueva) return false;
@@ -142,12 +127,11 @@ bool redimensionar_hash(hash_t *hash, bool aumentar){
     hash_campo_t* tabla_vieja = hash->tabla;
     inicializar_tabla(tabla_nueva, tam_nuevo);
     hash->tabla = tabla_nueva;
-    hash->largo = tam_nuevo; //Debe haber una forma mejor de hacerlo, es para que no redimensione nuevamente dentro de hash_guardar
+    hash->largo = tam_nuevo;
     hash->carga = ((float)hash->cantidad)/(float)hash->largo;
     hash->cantidad = 0;
 
     for(int i=0; i<tope; i++){
-        //Cuidado. Hay que ver como se inicializa cada campo de la tabla
         if(tabla_vieja[i].clave){
             if(!_hash_guardar_(hash, tabla_vieja[i].clave, tabla_vieja[i].valor, true)){
                 free(tabla_nueva);
@@ -234,6 +218,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     hash->cantidad = 0;
     hash->largo = TAM;
     hash->carga = 0;
+    hash->pos_tam = 0;
     hash->tabla = tabla;
     hash->destruir_dato = destruir_dato;
 

@@ -18,6 +18,9 @@ valgrind: build
 time: build
 	./tiempos_volumen.sh ./$(EXEC_S)
 
+gdb: build
+	gdb ./$(EXEC_S)
+
 pruebas: hashjulian.c pruebas_volumen.c testing.c 
 	$(CC) $(CFLAGS) -o ./pruebas_volumen hashjulian.c testing.c pruebas_volumen.c
 	

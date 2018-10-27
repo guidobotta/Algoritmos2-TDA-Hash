@@ -5,18 +5,13 @@
 #include <string.h>
 
 #define TAM 37
-#define FACTOR_AUMENTO 0.57
+#define FACTOR_AUMENTO 0.617
 #define FACTOR_DISMINUCION 0.1
 #define VACIO 'V'
 #define OCUPADO 'O'
 #define BORRADO 'B'
 #define AUMENTAR true
 #define DISMINUIR false
-#define TAM_PRIMOS 26
-//Vector de numeros primos para el tamaño de la tabla.
-/*const size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
-    1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};
-*/
 
 /* ******************************************************************+
  *                DEFINICION DE LOS TIPOS DE DATOS
@@ -31,7 +26,6 @@ typedef struct hash_campo{
 struct hash{
     size_t cantidad;
     size_t largo;
-    size_t pos_tam;
     float carga;
     hash_campo_t *tabla;
     hash_destruir_dato_t destruir_dato;
@@ -54,18 +48,8 @@ bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimensio
 ////
 //FUNCION DE HASHING
 ////
-//Funcion de hash djb2 obtenida de internet.
-size_t funcion_hash(unsigned char *str){
-    size_t hash = 5381;
-    int c;
-
-    while ((c = *str++))
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-
-    return hash;
-}
 //Funcion de hash K&R obtenida de internet.
-size_t funcion_hash2(unsigned char *s)
+size_t funcion_hash(unsigned char *s)
 {
     size_t hashval;
 
@@ -75,7 +59,7 @@ size_t funcion_hash2(unsigned char *s)
 }
 
 unsigned int hashing(const char *key, const hash_t* hash){
-    return (unsigned int)(funcion_hash2((unsigned char*)key) % hash->largo);
+    return (unsigned int)(funcion_hash((unsigned char*)key) % hash->largo);
 }
 
 ////
@@ -96,7 +80,7 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, const char* c
     }
     fact++;
 
-    return calcular_posicion(tabla, fact, (int)((posicion+(fact*fact)) % largo), clave, vacio, largo);
+    return calcular_posicion(tabla, fact, (int)((posicion+(fact*fact))%largo), clave, vacio, largo);
 }
 
 // Inicializar una tabla
@@ -116,7 +100,7 @@ void inicializar_tabla(hash_campo_t *tabla, size_t tam){
 
 bool redimensionar_hash(hash_t *hash, bool aumentar){
     size_t tam_nuevo = 0;
-    if(aumentar) tam_nuevo = (size_t)((double)hash->largo*(2.7)); //Duplico el tamaño
+    if(aumentar) tam_nuevo = (size_t)((double)hash->largo*(2.7)); //Multiplico el tamaño por 2.7
     else{
        tam_nuevo = hash->largo/4; //Divido entre 4
     }
@@ -148,10 +132,6 @@ bool redimensionar_hash(hash_t *hash, bool aumentar){
 
     return true;
 }
-
-///
-//FUNCION DE GUARDAR
-///
 
 // Modificar campo
 

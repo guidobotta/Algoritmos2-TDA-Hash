@@ -5,8 +5,8 @@
 #include <string.h>
 
 #define TAM 37
-#define FACTOR_AUMENTO 0.671
-#define FACTOR_DISMINUCION 0.2
+#define FACTOR_AUMENTO 0.617
+#define FACTOR_DISMINUCION 0.1
 #define VACIO 'V'
 #define OCUPADO 'O'
 #define BORRADO 'B'
@@ -25,7 +25,6 @@ typedef struct hash_campo{
 
 struct hash{
     size_t cantidad;
-    size_t borrados;
     size_t largo;
     float carga;
     hash_campo_t *tabla;
@@ -43,7 +42,8 @@ int calcular_posicion(hash_campo_t* tabla, int fact, int posicion, const char* c
 size_t nuevo_largo(hash_t *hash, bool aumentar);
 void inicializar_tabla(hash_campo_t *tabla, size_t tam);
 bool redimensionar_hash(hash_t *hash, bool aumentar);
-void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion);
+void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion, bool redimension);
+bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimension);
 
 ////
 //FUNCION DE HASHING
@@ -112,20 +112,22 @@ bool redimensionar_hash(hash_t *hash, bool aumentar){
     inicializar_tabla(tabla_nueva, tam_nuevo);
     hash->tabla = tabla_nueva;
     hash->largo = tam_nuevo;
-    hash->borrados = 0;
+    hash->carga = ((float)hash->cantidad)/(float)hash->largo;
+    hash->cantidad = 0;
 
     for(int i=0; i<tope; i++){
-        if(tabla_vieja[i].estado == OCUPADO){
-            int indice = hashing(tabla_vieja[i].clave, hash);
-            int vacio = -1;
-            calcular_posicion(hash->tabla, 0, indice, tabla_vieja[i].clave, &vacio, hash->largo);
-            hash->tabla[vacio].clave = tabla_vieja[i].clave;
-            hash->tabla[vacio].valor = tabla_vieja[i].valor;
-            hash->tabla[vacio].estado = OCUPADO;
+        if(tabla_vieja[i].clave){
+            if(!_hash_guardar_(hash, tabla_vieja[i].clave, tabla_vieja[i].valor, true)){
+                free(tabla_nueva);
+                hash->tabla = tabla_vieja;
+                hash->largo = tope;
+                hash->carga = ((float)hash->cantidad)/(float)hash->largo;
+                return false;
+            }
         }
     }
 
-    hash->carga = ((float)(hash->cantidad + hash->borrados))/(float)hash->largo;
+    hash->carga = ((float)hash->cantidad)/(float)hash->largo;
     free(tabla_vieja);
 
     return true;
@@ -133,13 +135,48 @@ bool redimensionar_hash(hash_t *hash, bool aumentar){
 
 // Modificar campo
 
-void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion){
-    hash->tabla[posicion].clave = (char*)clave;
+void modificar_campo(hash_t* hash, void *dato, const char *clave, int posicion, bool redimension){
+    if(!redimension){
+        char *clave_dinamica = malloc(sizeof(char)*strlen(clave)+1);
+        strcpy(clave_dinamica, clave);
+        hash->tabla[posicion].clave = clave_dinamica;
+    }else{
+        hash->tabla[posicion].clave = (char*)clave;
+    }
     hash->tabla[posicion].valor = dato;
     hash->tabla[posicion].estado = OCUPADO;
 }
 
+// Hash guardar
 
+bool _hash_guardar_(hash_t *hash, const char *clave, void *dato, bool redimension){
+
+    if(hash->carga >= FACTOR_AUMENTO && !redimension){
+        if(!redimensionar_hash(hash, AUMENTAR)) return false;//Le pasamos DISMINUIR si hay que achicar
+    }
+
+    int indice = hashing(clave, hash);
+    int vacio = -1;
+    int posicion = calcular_posicion(hash->tabla, 0, indice, clave, &vacio, hash->largo);
+
+    if(posicion == -1){
+        //ASIGNAR CLAVE EN VACIO
+        modificar_campo(hash, dato, clave, vacio, redimension);
+    }
+    else{
+        if(hash->destruir_dato){
+            hash->destruir_dato(hash->tabla[posicion].valor);
+        }
+        free(hash->tabla[posicion].clave);
+        modificar_campo(hash, dato, clave, posicion, redimension);
+        return true;
+    } //PISAR CLAVE ANTERIOR
+
+    hash->cantidad++;
+    hash->carga = ((float)hash->cantidad)/(float)hash->largo;
+
+    return true;
+}
 
 /* ******************************************************************
  *                      PRIMITIVAS DEL HASH
@@ -161,7 +198,6 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     hash->cantidad = 0;
     hash->largo = TAM;
     hash->carga = 0;
-    hash->borrados = 0;
     hash->tabla = tabla;
     hash->destruir_dato = destruir_dato;
 
@@ -169,36 +205,8 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 }
 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
-
-        if(hash->carga >= FACTOR_AUMENTO){
-            if(!redimensionar_hash(hash, AUMENTAR)) return false;//Le pasamos DISMINUIR si hay que achicar
-        }
-
-        int indice = hashing(clave, hash);
-        int vacio = -1;
-        int posicion = calcular_posicion(hash->tabla, 0, indice, clave, &vacio, hash->largo);
-
-        if(posicion == -1){
-            //ASIGNAR CLAVE EN VACIO
-            char *clave_dinamica = malloc(sizeof(char)*strlen(clave)+1);
-            strcpy(clave_dinamica, clave);
-            modificar_campo(hash, dato, clave_dinamica, vacio);
-        }
-        else{
-            if(hash->destruir_dato){
-                hash->destruir_dato(hash->tabla[posicion].valor);
-            }
-            //free(hash->tabla[posicion].clave);
-            hash->tabla[posicion].valor = dato;
-            return true;
-        } //PISAR CLAVE ANTERIOR
-
-        hash->cantidad++;
-        hash->carga = ((float)(hash->cantidad + hash->borrados))/(float)hash->largo;
-
-        return true;
-
-    }
+    return _hash_guardar_(hash, (char*)clave, dato, false);
+}
 
 void *hash_borrar(hash_t *hash, const char *clave){
     int posicion = 0;
@@ -214,9 +222,9 @@ void *hash_borrar(hash_t *hash, const char *clave){
 
     dato = hash->tabla[posicion].valor;
     hash->tabla[posicion] = campo;
+
     hash->cantidad--;
-    hash->borrados++;
-    hash->carga = ((float)(hash->cantidad + hash->borrados))/(float)hash->largo;
+    hash->carga = ((float)hash->cantidad)/(float)hash->largo;
 
     if(hash->carga <= FACTOR_DISMINUCION && hash->largo > TAM){
         if(!redimensionar_hash(hash, DISMINUIR)) return false;

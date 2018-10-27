@@ -14,9 +14,9 @@
 #define DISMINUIR false
 #define TAM_PRIMOS 26
 //Vector de numeros primos para el tamaño de la tabla.
-const size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
+/*const size_t vector[TAM_PRIMOS] = {37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911, 43853, 87719, 175447, 350899, 701819,
     1403641, 2807303, 5614657, 11229331, 22458671, 449117381, 89834777, 179669557, 359339171, 718678369, 1437356741};
-
+*/
 
 /* ******************************************************************+
  *                DEFINICION DE LOS TIPOS DE DATOS
@@ -115,11 +115,11 @@ void inicializar_tabla(hash_campo_t *tabla, size_t tam){
 // Redimensionar Hash
 
 bool redimensionar_hash(hash_t *hash, bool aumentar){
-    if(aumentar) hash->pos_tam++; //Duplico el tamaño
+    size_t tam_nuevo = 0;
+    if(aumentar) tam_nuevo = (size_t)((double)hash->largo*(2.7)); //Duplico el tamaño
     else{
-       hash->pos_tam -= 2; //Divido entre 4
+       tam_nuevo = hash->largo/4; //Divido entre 4
     }
-    size_t tam_nuevo = vector[hash->pos_tam];
     hash_campo_t* tabla_nueva = malloc(sizeof(hash_campo_t)*tam_nuevo);
     size_t tope = hash->largo;
     if(!tabla_nueva) return false;
@@ -218,7 +218,6 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
     hash->cantidad = 0;
     hash->largo = TAM;
     hash->carga = 0;
-    hash->pos_tam = 0;
     hash->tabla = tabla;
     hash->destruir_dato = destruir_dato;
 
